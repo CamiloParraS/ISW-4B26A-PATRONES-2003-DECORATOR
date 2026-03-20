@@ -1,0 +1,111 @@
+:root {
+  --bg: #0d1117;
+  --panel: #101820;
+  --panel-border: #2f3f4f;
+  --accent: #e94560;
+  --text: #d9e2ec;
+  --muted: #89a4b8;
+  --path: #c8a96e;
+  --buildable: #2d5a1b;
+  --scenery: #1a3a0a;
+  --grid: #00000033;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Orbitron", "Segoe UI", sans-serif;
+}
+
+.layout {
+  width: min(1500px, 98vw);
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #1f2937;
+  background: linear-gradient(180deg, #0f1722 0%, #0c141e 100%);
+  box-shadow: 0 0 40px #00000080;
+}
+
+#game {
+  width: min(1152px, calc(100vw - 360px));
+  height: auto;
+  border: 2px solid #394655;
+  background: #111;
+  image-rendering: pixelated;
+}
+
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hud {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.card {
+  border: 1px solid #304155;
+  border-radius: 8px;
+  padding: 10px;
+  background: #0d1620;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.value {
+  margin-top: 4px;
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.status {
+  margin-top: auto;
+  font-size: 0.85rem;
+  color: #8fb6d8;
+}
+
+@media (max-width: 1280px) {
+  .layout {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .sidebar {
+    width: min(800px, 100%);
+  }
+
+  #game {
+    width: 100%;
+  }
+}
