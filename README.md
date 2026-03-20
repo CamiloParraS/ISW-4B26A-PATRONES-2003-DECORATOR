@@ -36,8 +36,6 @@ Todos los decoradores extienden `TowerDecorator`, que implementa la interfaz `To
 | `FreezingDecorator` | proyectil - congelación, `getPierce()` + 2 |
 | `PiercingDecorator` | `getPierce()` + 3 (apilable) |
 | `CamoDetectorDecorator` | `canTargetCamo()` = true, otorga visión de camuflaje en aura a torres cercanas |
-Un detalle clave: `BaseTower.onTick` siempre recibe `self` — el decorador más **externo** — por lo que el targeting y la generación de proyectiles siempre reflejan las estadísticas completamente compuestas, no solo los valores base.
-`UpgradeRegistry` actúa como catálogo: mapea claves de mejora a funciones de fábrica, costos y etiquetas, y gestiona el re-envoltorio cuando se inserta una nueva mejora en el medio de una pila de decoradores existente.
 
 ---
 
