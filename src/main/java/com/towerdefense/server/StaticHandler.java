@@ -5,29 +5,47 @@ import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.net.URI;
 
 public class StaticHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        byte[] body;
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream("index.html")) {
+        String path = exchange.getRequestURI().getPath();
+
+        // Default to index.html if the root is requested
+        if (path.equals("/")) {
+            path = "/index.html";
+        }
+
+        // Remove the leading slash to look up in resources
+        String resourcePath = path.startsWith("/") ? path.substring(1) : path;
+
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             if (input == null) {
-                byte[] notFound = "index.html not found".getBytes(StandardCharsets.UTF_8);
-                exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
-                exchange.sendResponseHeaders(404, notFound.length);
+                String notFound = "404 (Not Found): " + resourcePath;
+                exchange.sendResponseHeaders(404, notFound.length());
                 try (OutputStream out = exchange.getResponseBody()) {
-                    out.write(notFound);
+                    out.write(notFound.getBytes());
                 }
                 return;
             }
-            body = input.readAllBytes();
-        }
 
-        exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
-        exchange.sendResponseHeaders(200, body.length);
-        try (OutputStream out = exchange.getResponseBody()) {
-            out.write(body);
+            byte[] body = input.readAllBytes();
+
+            // SET THE CORRECT MIME TYPE
+            String contentType = "text/plain";
+            if (path.endsWith(".html"))
+                contentType = "text/html";
+            else if (path.endsWith(".css"))
+                contentType = "text/css";
+            else if (path.endsWith(".js"))
+                contentType = "application/javascript";
+
+            exchange.getResponseHeaders().set("Content-Type", contentType + "; charset=utf-8");
+            exchange.sendResponseHeaders(200, body.length);
+            try (OutputStream out = exchange.getResponseBody()) {
+                out.write(body);
+            }
         }
     }
 }
