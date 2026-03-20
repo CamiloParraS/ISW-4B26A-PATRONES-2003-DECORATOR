@@ -37,5 +37,9 @@ public interface Tower {
 
     int getSellValue();
 
-    void onTick(double delta, List<Enemy> enemies, GameState state);
+    default void onTick(double delta, List<Enemy> enemies, GameState state) {
+        onTick(delta, enemies, state, this);
+    }
+
+    void onTick(double delta, List<Enemy> enemies, GameState state, Tower self);
 }

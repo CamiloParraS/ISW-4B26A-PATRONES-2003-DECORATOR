@@ -3,6 +3,7 @@ package com.towerdefense.server;
 import com.towerdefense.engine.GameState;
 import com.towerdefense.towers.BaseTower;
 import com.towerdefense.towers.Tower;
+import com.towerdefense.towers.UpgradeRegistry;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
@@ -23,6 +24,8 @@ public class ApiHandler implements HttpHandler {
     private static final Pattern GY_PATTERN = Pattern.compile("\"gy\"\\s*:\\s*(-?\\d+)");
     private static final Pattern TOWER_ID_PATTERN =
             Pattern.compile("\"towerId\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern UPGRADE_PATTERN =
+            Pattern.compile("\"upgrade\"\\s*:\\s*\"([^\"]+)\"");
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -53,6 +56,11 @@ public class ApiHandler implements HttpHandler {
 
         if ("POST".equalsIgnoreCase(method) && "/api/sell".equals(path)) {
             handleSell(exchange);
+            return;
+        }
+
+        if ("POST".equalsIgnoreCase(method) && "/api/upgrade".equals(path)) {
+            handleUpgrade(exchange);
             return;
         }
 
@@ -136,6 +144,79 @@ public class ApiHandler implements HttpHandler {
         });
 
         writeJson(exchange, status.get(), payload.get());
+    }
+
+    private void handleUpgrade(HttpExchange exchange) throws IOException {
+        String body = readBody(exchange);
+        String towerId = captureGroup(TOWER_ID_PATTERN, body);
+        String upgrade = captureGroup(UPGRADE_PATTERN, body);
+
+        if (towerId == null || towerId.isBlank() || upgrade == null || upgrade.isBlank()) {
+            writeJson(exchange, 400, "{\"error\":\"bad_input\"}");
+            return;
+        }
+
+        AtomicInteger status = new AtomicInteger(200);
+        AtomicReference<String> payload = new AtomicReference<>("{}");
+        runInQueue(status, payload, () -> {
+            GameState state = GameState.getInstance();
+            Tower existing = state.getTowerById(towerId);
+            if (existing == null) {
+                status.set(404);
+                payload.set("{\"error\":\"not_found\"}");
+                return;
+            }
+
+            if (UpgradeRegistry.installedKeys(existing).contains(upgrade)) {
+                status.set(400);
+                payload.set("{\"error\":\"already_applied\"}");
+                return;
+            }
+
+            final int cost;
+            try {
+                cost = UpgradeRegistry.getCost(upgrade);
+            } catch (IllegalArgumentException ex) {
+                status.set(400);
+                payload.set("{\"error\":\"bad_upgrade\"}");
+                return;
+            }
+
+            if (!state.trySpendCoins(cost)) {
+                status.set(402);
+                payload.set("{\"error\":\"insufficient_coins\"}");
+                return;
+            }
+
+            Tower upgraded = UpgradeRegistry.apply(upgrade, existing);
+            boolean replaced = state.replaceTower(towerId, upgraded);
+            if (!replaced) {
+                state.addCoins(cost);
+                status.set(404);
+                payload.set("{\"error\":\"not_found\"}");
+                return;
+            }
+
+            payload.set(
+                    "{\"upgrades\":" + jsonArray(UpgradeRegistry.installedKeys(upgraded)) + "}");
+        });
+
+        writeJson(exchange, status.get(), payload.get());
+    }
+
+    private static String jsonArray(Iterable<String> values) {
+        StringBuilder sb = new StringBuilder(64);
+        sb.append('[');
+        boolean first = true;
+        for (String value : values) {
+            if (!first) {
+                sb.append(',');
+            }
+            first = false;
+            sb.append('"').append(value.replace("\\", "\\\\").replace("\"", "\\\"")).append('"');
+        }
+        sb.append(']');
+        return sb.toString();
     }
 
     private static void runInQueue(AtomicInteger status, AtomicReference<String> payload,

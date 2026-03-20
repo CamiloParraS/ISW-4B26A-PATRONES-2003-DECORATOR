@@ -32,8 +32,35 @@ public final class CollisionDetector {
 
     private static void applyHit(Projectile p, Enemy e, GameState state) {
         e.applyDamage(p.getDamage());
+        if (p.getType() == ProjectileType.FREEZE && !e.isDead()) {
+            e.applySlow(0.4, 1.5);
+        }
+
+        if (p.getType() == ProjectileType.BOMB) {
+            applySplashDamage(state, e.getId(), e.getPx(), e.getPy(), p.getDamage() / 2);
+        }
+
         p.recordHit();
 
+        processDeath(e, state);
+    }
+
+    private static void applySplashDamage(GameState state, String directHitId, double impactX,
+            double impactY, int splashDamage) {
+        if (splashDamage <= 0) {
+            return;
+        }
+
+        state.getEnemies().stream().filter(other -> !other.isDead())
+                .filter(other -> !other.getId().equals(directHitId)).filter(other -> Math
+                        .hypot(other.getPx() - impactX, other.getPy() - impactY) <= 60.0)
+                .forEach(other -> {
+                    other.applyDamage(splashDamage);
+                    processDeath(other, state);
+                });
+    }
+
+    private static void processDeath(Enemy e, GameState state) {
         if (!e.isDead()) {
             return;
         }

@@ -9,7 +9,10 @@ import com.towerdefense.map.GameMap;
 import com.towerdefense.projectiles.Projectile;
 import com.towerdefense.projectiles.ProjectileType;
 import com.towerdefense.towers.Tower;
+import com.towerdefense.towers.UpgradeRegistry;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -35,6 +38,7 @@ public class GameState {
     private final List<Enemy> enemies = new CopyOnWriteArrayList<>();
     private final List<Tower> towers = new CopyOnWriteArrayList<>();
     private final List<Projectile> projectiles = new CopyOnWriteArrayList<>();
+    private final Set<String> camoGrantedIds = new HashSet<>();
     private final BlockingQueue<Runnable> commandQueue = new LinkedBlockingQueue<>();
 
     private GameState() {}
@@ -111,6 +115,16 @@ public class GameState {
         return towers.removeIf(t -> t.getId().equals(id));
     }
 
+    public boolean replaceTower(String id, Tower upgradedTower) {
+        for (int i = 0; i < towers.size(); i++) {
+            if (towers.get(i).getId().equals(id)) {
+                towers.set(i, upgradedTower);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Tower getTowerAt(int gx, int gy) {
         return towers.stream().filter(t -> t.getGridX() == gx && t.getGridY() == gy).findFirst()
                 .orElse(null);
@@ -138,7 +152,8 @@ public class GameState {
 
         List<TowerDto> towerDtos = towers.stream()
                 .map(t -> new TowerDto(t.getId(), t.getType(), t.getGridX(), t.getGridY(),
-                        t.getRange(), t.getUpgradeLabels(), t.getSellValue()))
+                        t.getRange(), t.getFireRate(), t.getUpgradeLabels(),
+                        UpgradeRegistry.available(t), t.getSellValue()))
                 .collect(Collectors.toList());
 
         List<ProjectileDto> projectileDtos =
@@ -196,5 +211,19 @@ public class GameState {
 
     public GameMap getMap() {
         return map;
+    }
+
+    public void clearCamoGrantedIds() {
+        camoGrantedIds.clear();
+    }
+
+    public void grantCamoTargeting(String towerId) {
+        if (towerId != null && !towerId.isBlank()) {
+            camoGrantedIds.add(towerId);
+        }
+    }
+
+    public boolean hasCamoTargeting(String towerId) {
+        return camoGrantedIds.contains(towerId);
     }
 }

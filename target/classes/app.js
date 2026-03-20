@@ -6,6 +6,9 @@ const PATH = 0;
 const BUILDABLE = 1;
 const SCENERY = 2;
 
+const doroImage = new Image();
+doroImage.src = "./assets/doro.webp";
+
 const COLORS = {
   [PATH]: "#C8A96E",
   [BUILDABLE]: "#2D5A1B",
@@ -28,6 +31,23 @@ const ENEMY_COLORS = {
 
 const TOWER_VISUALS = {
   dart: { color: "#22C55E", label: "Doro", cost: 200 },
+};
+
+const UPGRADE_META = {
+  RapidFire: { label: "Disparo Rapido", cost: 350, color: "#FACC15" },
+  Sniper: { label: "Sniper", cost: 500, color: "#A855F7" },
+  Explosive: { label: "Explosivo", cost: 600, color: "#EF4444" },
+  Freezing: { label: "Congelante", cost: 450, color: "#60A5FA" },
+  Piercing: { label: "Perforante", cost: 400, color: "#F97316" },
+  Laser: { label: "Laser", cost: 700, color: "#FBBF24" },
+  CamoDetector: { label: "Detector Camuflaje", cost: 300, color: "#10B981" },
+};
+
+const PROJ_STYLES = {
+  dart: { color: "#FFFFFF", radius: 5 },
+  bomb: { color: "#1C1917", radius: 8, outline: "#F97316" },
+  freeze: { color: "#BAE6FD", radius: 6 },
+  laser: { color: "#FDE047", radius: 3 },
 };
 
 const waypoints = [
@@ -173,30 +193,62 @@ function drawEnemies(enemies) {
 function drawTowers(towers) {
   towers.forEach((t) => {
     const visual = TOWER_VISUALS[t.type] || { color: "#22C55E" };
-    const px = t.gx * TILE + TILE / 2;
-    const py = t.gy * TILE + TILE / 2;
+    const x = t.gx * TILE;
+    const y = t.gy * TILE;
+    const centerX = x + TILE / 2;
+    const centerY = y + TILE / 2;
 
-    ctx.beginPath();
-    ctx.arc(px, py, 18, 0, Math.PI * 2);
-    ctx.fillStyle = visual.color;
-    ctx.fill();
+    if (t.type === "dart") {
+      // Draw the image scaled to the tile size
+      ctx.drawImage(doroImage, x, y, TILE, TILE);
+    } else {
+      // Fallback for other tower types
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 18, 0, Math.PI * 2);
+      ctx.fillStyle = visual.color;
+      ctx.fill();
+    }
 
+    // Keep the range indicator logic
     if (selectedTowerId === t.id) {
       ctx.beginPath();
-      ctx.arc(px, py, t.range, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, t.range, 0, Math.PI * 2);
       ctx.strokeStyle = `${visual.color}55`;
       ctx.lineWidth = 2;
       ctx.stroke();
     }
+
+    drawUpgradePips(t);
+  });
+}
+
+function drawUpgradePips(tower) {
+  // to decide whether to show pips for *installed* upgrades. Just resolve
+  // the installed list directly.
+  const upgrades = resolveUpgradeKeys(tower.upgrades || []);
+  upgrades.forEach((u, i) => {
+    const angle = (i / 7) * Math.PI * 2;
+    const pipX = tower.gx * TILE + TILE / 2 + Math.cos(angle) * 22;
+    const pipY = tower.gy * TILE + TILE / 2 + Math.sin(angle) * 22;
+    ctx.beginPath();
+    ctx.arc(pipX, pipY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = UPGRADE_META[u]?.color || "#FFFFFF";
+    ctx.fill();
   });
 }
 
 function drawProjectiles(projectiles) {
   projectiles.forEach((p) => {
+    const s = PROJ_STYLES[p.type] || PROJ_STYLES.dart;
     ctx.beginPath();
-    ctx.arc(p.px, p.py, 5, 0, Math.PI * 2);
-    ctx.fillStyle = p.type === "dart" ? "#FFFFFF" : "#FFA500";
+    ctx.arc(p.px, p.py, s.radius, 0, Math.PI * 2);
+    ctx.fillStyle = s.color;
     ctx.fill();
+    if (s.outline) {
+      ctx.strokeStyle = s.outline;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
   });
 }
 
@@ -219,24 +271,67 @@ function updateTowerPanel() {
   const modeLabel = document.getElementById("build-mode");
   modeLabel.textContent = pendingTowerType
     ? `Colocando: ${TOWER_VISUALS[pendingTowerType].label}`
-    : "Colocand: ningun";
+    : "Colocando: ningun";
 
   const selected =
     (latestState.towers || []).find((t) => t.id === selectedTowerId) || null;
   const selectedPanel = document.getElementById("selected-panel");
   const selectedLabel = document.getElementById("selected-label");
+  const selectedStats = document.getElementById("selected-stats");
+  const installedContainer = document.getElementById("installed-upgrades");
+  const availableContainer = document.getElementById("available-upgrades");
   const sellBtn = document.getElementById("sell-button");
 
   if (!selected) {
     selectedPanel.classList.add("hidden");
-    selectedLabel.textContent = "No tower selected";
-    sellBtn.textContent = "Sell";
+    selectedLabel.textContent = "No Doro seleccionado";
+    selectedStats.textContent = "";
+    installedContainer.innerHTML = "Ninguna";
+    availableContainer.innerHTML = "";
+    sellBtn.textContent = "Vender";
     return;
   }
 
   selectedPanel.classList.remove("hidden");
   selectedLabel.textContent = `${TOWER_VISUALS[selected.type]?.label || selected.type} (${selected.gx}, ${selected.gy})`;
-  sellBtn.textContent = `Sell for ${selected.sellValue}c`;
+  selectedStats.textContent = `Rango: ${Math.round(selected.range)} px | Disparo/s: ${(selected.fireRate || 0).toFixed(2)}/s`;
+
+  const installed = resolveUpgradeKeys(selected.upgrades || []);
+  installedContainer.innerHTML = installed.length
+    ? installed
+        .map(
+          (key) =>
+            `<span class="upgrade-chip">\u2705 ${UPGRADE_META[key]?.label || key}</span>`,
+        )
+        .join("")
+    : "Ninguna";
+
+  const available = selected.availableUpgrades || [];
+  availableContainer.innerHTML = available.length
+    ? available
+        .map((key) => {
+          const cost = UPGRADE_META[key]?.cost ?? 0;
+          const canAfford = (latestState.coins || 0) >= cost;
+          const label = UPGRADE_META[key]?.label || key;
+          return `<button class="upgrade-btn" data-upgrade="${key}" ${canAfford ? "" : "disabled"}>${label} - ${cost}🍊</button>`;
+        })
+        .join("")
+    : '<span class="status">Sin mejoras disponibles</span>';
+
+  sellBtn.textContent = `Vender por ${selected.sellValue}🍊`;
+}
+
+function resolveUpgradeKeys(upgradeLabels) {
+  const labelToKey = {
+    "Rapid Fire": "RapidFire",
+    Sniper: "Sniper",
+    Explosive: "Explosive",
+    Freezing: "Freezing",
+    Piercing: "Piercing",
+    Laser: "Laser",
+    "Camo Detector": "CamoDetector",
+  };
+  return (upgradeLabels || []).map((label) => labelToKey[label] || label);
 }
 
 async function startWave() {
@@ -280,17 +375,56 @@ async function sellSelectedTower() {
   }
 }
 
+async function upgradeSelectedTower(upgrade) {
+  if (!selectedTowerId) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/upgrade", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ towerId: selectedTowerId, upgrade }),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("Upgrade request failed", response.status, text);
+    }
+  } catch (err) {
+    console.error("Failed to upgrade tower", err);
+  }
+}
+
 function connectEvents() {
+  // The panel is only rebuilt when the selected tower's data or coin count
+  // actually changes, so the upgrade buttons are never destroyed mid-click
+  // by the 50 Hz SSE stream.
+  let lastSelectedSnapshot = "";
+
   const events = new EventSource("/events");
   events.onmessage = (event) => {
     try {
       const state = JSON.parse(event.data);
       latestState = state;
+
       if (!(latestState.towers || []).some((t) => t.id === selectedTowerId)) {
         selectedTowerId = null;
       }
+
       updateHud(state);
-      updateTowerPanel();
+
+      const selectedTower =
+        (state.towers || []).find((t) => t.id === selectedTowerId) ?? null;
+      const snapshot = JSON.stringify({
+        selectedTowerId,
+        tower: selectedTower,
+        coins: state.coins,
+      });
+      if (snapshot !== lastSelectedSnapshot) {
+        lastSelectedSnapshot = snapshot;
+        updateTowerPanel();
+      }
+
       render(state);
     } catch (err) {
       console.error("Invalid SSE payload", err, event.data);
@@ -318,6 +452,27 @@ function connectUi() {
   document
     .getElementById("sell-button")
     .addEventListener("click", sellSelectedTower);
+
+  document
+    .getElementById("available-upgrades")
+    .addEventListener("click", async (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const button = target.closest("button[data-upgrade]");
+      if (!(button instanceof HTMLButtonElement) || button.disabled) {
+        return;
+      }
+
+      const upgrade = button.getAttribute("data-upgrade");
+      if (!upgrade) {
+        return;
+      }
+
+      await upgradeSelectedTower(upgrade);
+    });
 
   canvas.addEventListener("mousemove", (event) => {
     if (!pendingTowerType) {

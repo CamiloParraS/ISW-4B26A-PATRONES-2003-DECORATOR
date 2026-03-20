@@ -41,6 +41,17 @@ public class StaticHandler implements HttpHandler {
             else if (path.endsWith(".js"))
                 contentType = "application/javascript";
 
+            else if (path.endsWith(".png"))
+                contentType = "image/png";
+            else if (path.endsWith(".jpg") || path.endsWith(".jpeg"))
+                contentType = "image/jpeg";
+            else if (path.endsWith(".gif"))
+                contentType = "image/gif";
+            else if (path.endsWith(".svg"))
+                contentType = "image/svg+xml";
+            else if (path.endsWith(".webp"))
+                contentType = "image/webp";
+
             exchange.getResponseHeaders().set("Content-Type", contentType + "; charset=utf-8");
             exchange.sendResponseHeaders(200, body.length);
             try (OutputStream out = exchange.getResponseBody()) {

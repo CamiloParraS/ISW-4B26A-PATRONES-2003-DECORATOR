@@ -14,6 +14,13 @@ public class BaseTower implements Tower {
     private final int gridX;
     private final int gridY;
     private double cooldown = 0.0;
+    private Tower rateSource = this;
+
+    // Called by TowerDecorator whenever a new layer is wrapped around this tower,
+    // so that onTick always uses the outermost decorator's getFireRate().
+    void setRateSource(Tower t) {
+        this.rateSource = t;
+    }
 
     public BaseTower(String id, int gridX, int gridY) {
         this.id = id;
@@ -102,14 +109,17 @@ public class BaseTower implements Tower {
     }
 
     @Override
-    public void onTick(double delta, List<Enemy> enemies, GameState state) {
+    public void onTick(double delta, List<Enemy> enemies, GameState state, Tower self) {
         cooldown -= delta;
         if (cooldown > 0) {
             return;
         }
 
         Enemy target = enemies.stream().filter(e -> !e.isDead())
-                .filter(e -> distanceTo(e) <= getRange()).filter(this::canHitEnemy)
+                // Query SELF for the range
+                .filter(e -> distanceTo(e) <= self.getRange())
+                // Pass SELF to targeting logic
+                .filter(e -> canHitEnemy(e, state, self))
                 .max(Comparator.comparingInt(Enemy::getProgressIndex)
                         .thenComparingDouble(Enemy::getProgressOffset))
                 .orElse(null);
@@ -118,15 +128,21 @@ public class BaseTower implements Tower {
             return;
         }
 
-        state.spawnProjectile(this, target);
-        cooldown = 1.0 / getFireRate();
+        // Pass SELF to the projectile so it gets the modified pierce/types!
+        state.spawnProjectile(self, target);
+
+        // Query SELF for the modified fire rate!
+        cooldown = 1.0 / self.getFireRate();
     }
 
-    private boolean canHitEnemy(Enemy e) {
-        if (!canTargetCamo() && e.getType().getResistances().contains(BloonType.Resist.CAMO)) {
+    private boolean canHitEnemy(Enemy e, GameState state, Tower self) {
+        // Query SELF for targeting capabilities
+        boolean hasCamoTargeting = self.canTargetCamo() || state.hasCamoTargeting(self.getId());
+        if (!hasCamoTargeting && e.getType().getResistances().contains(BloonType.Resist.CAMO)) {
             return false;
         }
-        return canTargetLead() || !e.getType().getResistances().contains(BloonType.Resist.LEAD);
+        return self.canTargetLead()
+                || !e.getType().getResistances().contains(BloonType.Resist.LEAD);
     }
 
     private double distanceTo(Enemy e) {

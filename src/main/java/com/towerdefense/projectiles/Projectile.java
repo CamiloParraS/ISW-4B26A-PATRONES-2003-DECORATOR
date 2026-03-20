@@ -132,7 +132,7 @@ public class Projectile {
             case DART -> 400;
             case BOMB -> 300;
             case FREEZE -> 350;
-            case LASER -> 1200;
+            case LASER -> 9999;
         };
     }
 

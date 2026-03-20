@@ -47,6 +47,7 @@ public class GameLoop {
 
         state.getWaveManager().tick(delta, state);
         state.getEnemies().forEach(e -> e.tick(delta, state.getMap().getWaypoints()));
+        state.clearCamoGrantedIds();
         state.getTowers().forEach(t -> t.onTick(delta, state.getEnemies(), state));
         state.getProjectiles().forEach(p -> p.tick(delta));
         CollisionDetector.resolve(state);
