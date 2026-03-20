@@ -32,16 +32,39 @@ body {
   gap: 16px;
   padding: 20px;
   border: 1px solid #1f2937;
-  background: linear-gradient(180deg, #0f1722 0%, #0c141e 100%);
+  background: #0f1722;
   box-shadow: 0 0 40px #00000080;
 }
 
 #game {
   width: min(1152px, calc(100vw - 360px));
-  height: auto;
+  max-height: 85vh;
   border: 2px solid #394655;
   background: #111;
   image-rendering: pixelated;
+}
+
+.canvas-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(2rem, 4vw, 4rem);
+  font-weight: 700;
+  color: #fca5a5;
+  background: #111827c0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hidden {
+  display: none;
 }
 
 .sidebar {
@@ -93,6 +116,22 @@ h1 {
   margin-top: auto;
   font-size: 0.85rem;
   color: #8fb6d8;
+}
+
+.start-wave {
+  margin-top: auto;
+  border: 1px solid #ef4444;
+  background: #b91c1c;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.start-wave:hover {
+  filter: brightness(1.08);
 }
 
 @media (max-width: 1280px) {

@@ -8,23 +8,27 @@
   </head>
   <body>
     <div class="layout">
-      <canvas id="game" width="1152" height="768"></canvas>
+      <div class="canvas-wrap">
+        <canvas id="game" width="1152" height="768"></canvas>
+        <div id="game-over" class="overlay hidden">Game Over</div>
+      </div>
       <div class="sidebar">
         <h1>Doro Defense</h1>
         <div class="hud">
           <div class="card">
             <div class="label">Oleada</div>
-            <div class="value">1</div>
+            <div class="value" id="hud-wave">0</div>
           </div>
           <div class="card">
             <div class="label">Vida</div>
-            <div class="value">100</div>
+            <div class="value" id="hud-lives">100</div>
           </div>
           <div class="card">
             <div class="label">Naranjas</div>
-            <div class="value">650</div>
+            <div class="value" id="hud-coins">650</div>
           </div>
         </div>
+        <button id="start-wave" class="start-wave">Comenzar Oleada</button>
       </div>
     </div>
 
