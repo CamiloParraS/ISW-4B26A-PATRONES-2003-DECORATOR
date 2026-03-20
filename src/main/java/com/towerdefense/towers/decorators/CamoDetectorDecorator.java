@@ -37,6 +37,6 @@ public class CamoDetectorDecorator extends TowerDecorator {
 
     @Override
     protected int ownCost() {
-        return 300;
+        return 250;
     }
 }

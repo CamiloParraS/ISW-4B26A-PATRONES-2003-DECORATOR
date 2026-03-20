@@ -21,16 +21,17 @@ public class UpgradeRegistry {
     }
 
     private static final Map<String, UpgradeSpec> SPECS =
-            Map.of("RapidFire", new UpgradeSpec(RapidFireDecorator::new, 350, "Rapid Fire"),
-                    "Sniper", new UpgradeSpec(SniperDecorator::new, 500, "Sniper"), "Explosive",
-                    new UpgradeSpec(ExplosiveDecorator::new, 600, "Explosive"), "Freezing",
-                    new UpgradeSpec(FreezingDecorator::new, 450, "Freezing"), "Piercing",
-                    new UpgradeSpec(PiercingDecorator::new, 400, "Piercing"), "Laser",
-                    new UpgradeSpec(LaserDecorator::new, 700, "Laser"), "CamoDetector",
-                    new UpgradeSpec(CamoDetectorDecorator::new, 300, "Camo Detector"));
+            Map.of("RapidFire", new UpgradeSpec(RapidFireDecorator::new, 300, "Rapid Fire"),
+                    "Sniper", new UpgradeSpec(SniperDecorator::new, 450, "Sniper"), "Explosive",
+                    new UpgradeSpec(ExplosiveDecorator::new, 520, "Explosive"), "Freezing",
+                    new UpgradeSpec(FreezingDecorator::new, 380, "Freezing"), "Piercing",
+                    new UpgradeSpec(PiercingDecorator::new, 340, "Piercing"), "Laser",
+                    new UpgradeSpec(LaserDecorator::new, 620, "Laser"), "CamoDetector",
+                    new UpgradeSpec(CamoDetectorDecorator::new, 250, "Camo Detector"));
 
     private static final Map<String, String> LABEL_TO_KEY = buildLabelIndex();
     private static final Map<Class<?>, UpgradeSpec> CLASS_TO_SPEC = buildClassIndex();
+    private static final Set<String> STACKABLE_UPGRADES = Set.of("RapidFire", "Piercing");
 
     private UpgradeRegistry() {}
 
@@ -58,8 +59,12 @@ public class UpgradeRegistry {
 
     public static List<String> available(Tower tower) {
         Set<String> installed = installedKeys(tower);
-        return SPECS.keySet().stream().filter(k -> !installed.contains(k)).sorted()
+        return SPECS.keySet().stream().filter(k -> canApply(k, installed)).sorted()
                 .collect(Collectors.toList());
+    }
+
+    public static boolean canApply(String upgradeKey, Tower tower) {
+        return canApply(upgradeKey, installedKeys(tower));
     }
 
     public static Set<String> installedKeys(Tower tower) {
@@ -71,6 +76,17 @@ public class UpgradeRegistry {
             }
         }
         return installed;
+    }
+
+    private static boolean canApply(String upgradeKey, Set<String> installedKeys) {
+        if (!SPECS.containsKey(upgradeKey)) {
+            return false;
+        }
+        return isStackable(upgradeKey) || !installedKeys.contains(upgradeKey);
+    }
+
+    private static boolean isStackable(String upgradeKey) {
+        return STACKABLE_UPGRADES.contains(upgradeKey);
     }
 
     private static Map<String, String> buildLabelIndex() {

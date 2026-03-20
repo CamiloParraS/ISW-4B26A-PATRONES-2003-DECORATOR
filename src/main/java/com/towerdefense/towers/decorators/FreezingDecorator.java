@@ -24,6 +24,6 @@ public class FreezingDecorator extends TowerDecorator {
 
     @Override
     protected int ownCost() {
-        return 450;
+        return 380;
     }
 }

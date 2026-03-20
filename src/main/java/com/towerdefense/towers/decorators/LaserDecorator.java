@@ -29,6 +29,6 @@ public class LaserDecorator extends TowerDecorator {
 
     @Override
     protected int ownCost() {
-        return 700;
+        return 620;
     }
 }

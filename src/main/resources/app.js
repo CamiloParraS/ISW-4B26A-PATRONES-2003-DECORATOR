@@ -301,7 +301,7 @@ function updateTowerPanel() {
     ? installed
         .map(
           (key) =>
-            `<span class="upgrade-chip">\u2705 ${UPGRADE_META[key]?.label || key}</span>`,
+            `<span class="upgrade-chip"> ${UPGRADE_META[key]?.label || key}</span>`,
         )
         .join("")
     : "Ninguna";

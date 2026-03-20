@@ -19,6 +19,6 @@ public class PiercingDecorator extends TowerDecorator {
 
     @Override
     protected int ownCost() {
-        return 400;
+        return 340;
     }
 }

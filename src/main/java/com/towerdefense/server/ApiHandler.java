@@ -167,18 +167,18 @@ public class ApiHandler implements HttpHandler {
                 return;
             }
 
-            if (UpgradeRegistry.installedKeys(existing).contains(upgrade)) {
-                status.set(400);
-                payload.set("{\"error\":\"already_applied\"}");
-                return;
-            }
-
             final int cost;
             try {
                 cost = UpgradeRegistry.getCost(upgrade);
             } catch (IllegalArgumentException ex) {
                 status.set(400);
                 payload.set("{\"error\":\"bad_upgrade\"}");
+                return;
+            }
+
+            if (!UpgradeRegistry.canApply(upgrade, existing)) {
+                status.set(400);
+                payload.set("{\"error\":\"already_applied\"}");
                 return;
             }
 

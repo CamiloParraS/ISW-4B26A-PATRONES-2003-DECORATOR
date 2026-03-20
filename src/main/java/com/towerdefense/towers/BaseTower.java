@@ -60,12 +60,12 @@ public class BaseTower implements Tower {
 
     @Override
     public double getRange() {
-        return 120.0;
+        return 132.0;
     }
 
     @Override
     public double getFireRate() {
-        return 1.0;
+        return 1.2;
     }
 
     @Override

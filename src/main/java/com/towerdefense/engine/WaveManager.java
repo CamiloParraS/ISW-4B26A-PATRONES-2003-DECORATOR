@@ -27,17 +27,19 @@ public class WaveManager {
         }
 
         if (waveNumber == 1) {
-            queue.add(new SpawnEvent(BloonType.RED, 20, 0.5));
+            queue.add(new SpawnEvent(BloonType.RED, 18, 0.4));
         } else if (waveNumber == 2) {
-            queue.add(new SpawnEvent(BloonType.BLUE, 20, 0.4));
-            queue.add(new SpawnEvent(BloonType.RED, 10, 0.3));
+            queue.add(new SpawnEvent(BloonType.BLUE, 18, 0.34));
+            queue.add(new SpawnEvent(BloonType.RED, 14, 0.24));
         } else if (waveNumber == 3) {
-            queue.add(new SpawnEvent(BloonType.GREEN, 15, 0.4));
+            queue.add(new SpawnEvent(BloonType.GREEN, 14, 0.33));
+            queue.add(new SpawnEvent(BloonType.BLUE, 10, 0.24));
         } else if (waveNumber == 4) {
-            queue.add(new SpawnEvent(BloonType.YELLOW, 10, 0.35));
+            queue.add(new SpawnEvent(BloonType.YELLOW, 12, 0.3));
+            queue.add(new SpawnEvent(BloonType.GREEN, 10, 0.24));
         } else if (waveNumber == 5) {
-            queue.add(new SpawnEvent(BloonType.CAMO, 5, 0.8));
-            queue.add(new SpawnEvent(BloonType.YELLOW, 20, 0.3));
+            queue.add(new SpawnEvent(BloonType.CAMO, 6, 0.58));
+            queue.add(new SpawnEvent(BloonType.YELLOW, 18, 0.24));
         } else {
             buildScaledWave(waveNumber);
         }
@@ -84,18 +86,18 @@ public class WaveManager {
                 BloonType.YELLOW, BloonType.PINK, BloonType.ZEBRA, BloonType.RAINBOW,
                 BloonType.CERAMIC, BloonType.MOAB);
 
-        int baseCount = 12 + waveNumber * 3;
+        int baseCount = 10 + waveNumber * 3;
         int tierIndex = Math.min(tiers.size() - 1, 1 + waveNumber / 3);
         int lowerTierIndex = Math.max(0, tierIndex - 1);
 
-        double fastInterval = Math.max(0.12, 0.38 - waveNumber * 0.01);
-        double slowInterval = Math.max(0.2, fastInterval + 0.08);
+        double fastInterval = Math.max(0.1, 0.34 - waveNumber * 0.01);
+        double slowInterval = Math.max(0.16, fastInterval + 0.06);
 
         queue.add(new SpawnEvent(tiers.get(lowerTierIndex), baseCount, fastInterval));
         queue.add(new SpawnEvent(tiers.get(tierIndex), Math.max(6, baseCount / 2), slowInterval));
 
         if (waveNumber % 5 == 0) {
-            queue.add(new SpawnEvent(BloonType.MOAB, Math.max(1, waveNumber / 10), 1.2));
+            queue.add(new SpawnEvent(BloonType.MOAB, Math.max(1, waveNumber / 12), 1.0));
         }
     }
 }

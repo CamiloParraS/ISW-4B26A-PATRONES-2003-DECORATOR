@@ -5,11 +5,11 @@ import java.util.EnumSet;
 import java.util.Set;
 
 public enum BloonType {
-    RED(1, 80, 1, null), BLUE(1, 100, 2, RED), GREEN(1, 120, 3, BLUE), YELLOW(1, 200, 4,
-            GREEN), PINK(1, 250, 5, YELLOW), CAMO(1, 120, 6, GREEN, Resist.CAMO), LEAD(2, 60, 10,
-                    PINK, Resist.LEAD), ZEBRA(1, 150, 11, null, Resist.FREEZE), RAINBOW(1, 175, 20,
-                            ZEBRA), CERAMIC(10, 100, 50,
-                                    RAINBOW), MOAB(200, 50, 200, null, Resist.LEAD);
+    RED(1, 76, 3, null), BLUE(1, 94, 6, RED), GREEN(1, 112, 9, BLUE), YELLOW(1, 178, 12,
+            GREEN), PINK(1, 225, 15, YELLOW), CAMO(1, 126, 21, GREEN, Resist.CAMO), LEAD(2, 68, 36,
+                    PINK, Resist.LEAD), ZEBRA(1, 158, 39, null, Resist.FREEZE), RAINBOW(1, 182, 66,
+                            ZEBRA), CERAMIC(9, 108, 180,
+                                    RAINBOW), MOAB(170, 56, 720, null, Resist.LEAD);
 
     public enum Resist {
         CAMO, LEAD, FREEZE

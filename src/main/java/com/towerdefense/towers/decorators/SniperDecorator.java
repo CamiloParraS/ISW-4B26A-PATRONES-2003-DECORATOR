@@ -20,7 +20,7 @@ public class SniperDecorator extends TowerDecorator {
 
     @Override
     public double getFireRate() {
-        return wrapped.getFireRate() * 0.6;
+        return wrapped.getFireRate() * 0.75;
     }
 
     @Override
@@ -52,6 +52,6 @@ public class SniperDecorator extends TowerDecorator {
 
     @Override
     protected int ownCost() {
-        return 500;
+        return 450;
     }
 }

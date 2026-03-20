@@ -28,7 +28,7 @@ public class GameState {
 
     private volatile boolean running = false;
     private int lives = 100;
-    private int coins = 650;
+    private int coins = 800;
     private int wave = 0;
     private volatile Phase phase = Phase.PREP;
 

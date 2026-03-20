@@ -24,6 +24,6 @@ public class ExplosiveDecorator extends TowerDecorator {
 
     @Override
     protected int ownCost() {
-        return 600;
+        return 520;
     }
 }
