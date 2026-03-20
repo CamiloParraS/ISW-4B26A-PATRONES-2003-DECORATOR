@@ -38,6 +38,18 @@ public class BloonEnemy implements Enemy {
         this.py = centerPy(waypoints.get(0)[1]);
     }
 
+    public BloonEnemy(BloonType type, double px, double py, int progressIndex,
+            double progressOffset) {
+        this.type = type;
+        this.maxHp = type.getHp();
+        this.hp = this.maxHp;
+        this.radius = type == BloonType.MOAB ? 24.0 : (type == BloonType.CERAMIC ? 16.0 : 14.0);
+        this.px = px;
+        this.py = py;
+        this.progressIndex = progressIndex;
+        this.progressOffset = progressOffset;
+    }
+
     @Override
     public String getId() {
         return id;

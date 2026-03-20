@@ -2,9 +2,15 @@ package com.towerdefense.engine;
 
 import com.towerdefense.dto.EnemyDto;
 import com.towerdefense.dto.GameStateDto;
+import com.towerdefense.dto.ProjectileDto;
+import com.towerdefense.dto.TowerDto;
 import com.towerdefense.enemies.Enemy;
 import com.towerdefense.map.GameMap;
+import com.towerdefense.projectiles.Projectile;
+import com.towerdefense.projectiles.ProjectileType;
+import com.towerdefense.towers.Tower;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -72,8 +78,51 @@ public class GameState {
         return wave;
     }
 
+    public synchronized boolean trySpendCoins(int amount) {
+        if (amount <= 0) {
+            return true;
+        }
+        if (coins < amount) {
+            return false;
+        }
+        coins -= amount;
+        return true;
+    }
+
+    public synchronized void addCoins(int amount) {
+        if (amount > 0) {
+            coins += amount;
+        }
+    }
+
+    public void spawnProjectile(Tower source, Enemy target) {
+        Projectile p = new Projectile(UUID.randomUUID().toString(),
+                ProjectileType.valueOf(source.getProjectileType().toUpperCase()),
+                source.getCenterPx(), source.getCenterPy(), target.getPx(), target.getPy(),
+                source.getDamage(), source.getPierce());
+        projectiles.add(p);
+    }
+
+    public void addTower(Tower tower) {
+        towers.add(tower);
+    }
+
+    public boolean removeTower(String id) {
+        return towers.removeIf(t -> t.getId().equals(id));
+    }
+
+    public Tower getTowerAt(int gx, int gy) {
+        return towers.stream().filter(t -> t.getGridX() == gx && t.getGridY() == gy).findFirst()
+                .orElse(null);
+    }
+
+    public Tower getTowerById(String id) {
+        return towers.stream().filter(t -> t.getId().equals(id)).findFirst().orElse(null);
+    }
+
     public void cleanup() {
         enemies.removeIf(Enemy::isDead);
+        projectiles.removeIf(Projectile::isDead);
         if (phase == Phase.WAVE && waveManager.isComplete()) {
             phase = Phase.PREP;
             running = false;
@@ -87,7 +136,19 @@ public class GameState {
                                 e.getHp(), e.getMaxHp(), e.getSlowFactor()))
                         .collect(Collectors.toList());
 
-        return new GameStateDto(wave, lives, coins, phase.name(), enemyDtos, List.of(), List.of());
+        List<TowerDto> towerDtos = towers.stream()
+                .map(t -> new TowerDto(t.getId(), t.getType(), t.getGridX(), t.getGridY(),
+                        t.getRange(), t.getUpgradeLabels(), t.getSellValue()))
+                .collect(Collectors.toList());
+
+        List<ProjectileDto> projectileDtos =
+                projectiles
+                        .stream().map(p -> new ProjectileDto(p.getId(),
+                                p.getType().name().toLowerCase(), p.getPx(), p.getPy()))
+                        .collect(Collectors.toList());
+
+        return new GameStateDto(wave, lives, coins, phase.name(), enemyDtos, towerDtos,
+                projectileDtos);
     }
 
     public boolean isRunning() {

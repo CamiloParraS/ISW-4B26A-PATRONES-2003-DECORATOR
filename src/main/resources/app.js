@@ -26,6 +26,10 @@ const ENEMY_COLORS = {
   MOAB: "#1E40AF",
 };
 
+const TOWER_VISUALS = {
+  dart: { color: "#22C55E", label: "Doro", cost: 200 },
+};
+
 const waypoints = [
   [0, 7],
   [5, 7],
@@ -62,12 +66,52 @@ function createGrid() {
   return grid;
 }
 
+const grid = createGrid();
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-function drawMap() {
-  const grid = createGrid();
+let latestState = {
+  wave: 0,
+  lives: 100,
+  coins: 650,
+  phase: "PREP",
+  enemies: [],
+  towers: [],
+  projectiles: [],
+};
+let pendingTowerType = null;
+let selectedTowerId = null;
+let hoverCell = null;
 
+function towerAt(gx, gy) {
+  const towers = latestState.towers || [];
+  return towers.find((t) => t.gx === gx && t.gy === gy) || null;
+}
+
+function isWithinBounds(gx, gy) {
+  return gx >= 0 && gx < COLS && gy >= 0 && gy < ROWS;
+}
+
+function isBuildable(gx, gy) {
+  return (
+    isWithinBounds(gx, gy) && grid[gx][gy] === BUILDABLE && !towerAt(gx, gy)
+  );
+}
+
+function getCellFromMouse(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const px = (event.clientX - rect.left) * scaleX;
+  const py = (event.clientY - rect.top) * scaleY;
+  return {
+    gx: Math.floor(px / TILE),
+    gy: Math.floor(py / TILE),
+  };
+}
+
+function drawMap() {
   for (let col = 0; col < COLS; col++) {
     for (let row = 0; row < ROWS; row++) {
       const type = grid[col][row] ?? SCENERY;
@@ -81,6 +125,24 @@ function drawMap() {
       ctx.lineWidth = 1;
       ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
     }
+  }
+
+  if (
+    pendingTowerType &&
+    hoverCell &&
+    isWithinBounds(hoverCell.gx, hoverCell.gy)
+  ) {
+    const canPlace = isBuildable(hoverCell.gx, hoverCell.gy);
+    ctx.fillStyle = canPlace ? "#22C55E66" : "#EF444466";
+    ctx.fillRect(hoverCell.gx * TILE, hoverCell.gy * TILE, TILE, TILE);
+    ctx.strokeStyle = canPlace ? "#22C55E" : "#EF4444";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+      hoverCell.gx * TILE + 1,
+      hoverCell.gy * TILE + 1,
+      TILE - 2,
+      TILE - 2,
+    );
   }
 }
 
@@ -108,9 +170,41 @@ function drawEnemies(enemies) {
   });
 }
 
+function drawTowers(towers) {
+  towers.forEach((t) => {
+    const visual = TOWER_VISUALS[t.type] || { color: "#22C55E" };
+    const px = t.gx * TILE + TILE / 2;
+    const py = t.gy * TILE + TILE / 2;
+
+    ctx.beginPath();
+    ctx.arc(px, py, 18, 0, Math.PI * 2);
+    ctx.fillStyle = visual.color;
+    ctx.fill();
+
+    if (selectedTowerId === t.id) {
+      ctx.beginPath();
+      ctx.arc(px, py, t.range, 0, Math.PI * 2);
+      ctx.strokeStyle = `${visual.color}55`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  });
+}
+
+function drawProjectiles(projectiles) {
+  projectiles.forEach((p) => {
+    ctx.beginPath();
+    ctx.arc(p.px, p.py, 5, 0, Math.PI * 2);
+    ctx.fillStyle = p.type === "dart" ? "#FFFFFF" : "#FFA500";
+    ctx.fill();
+  });
+}
+
 function render(state) {
   drawMap();
+  drawTowers(state.towers || []);
   drawEnemies(state.enemies || []);
+  drawProjectiles(state.projectiles || []);
 }
 
 function updateHud(state) {
@@ -121,6 +215,30 @@ function updateHud(state) {
   overlay.classList.toggle("hidden", state.phase !== "GAME_OVER");
 }
 
+function updateTowerPanel() {
+  const modeLabel = document.getElementById("build-mode");
+  modeLabel.textContent = pendingTowerType
+    ? `Colocando: ${TOWER_VISUALS[pendingTowerType].label}`
+    : "Colocando: ningun";
+
+  const selected =
+    (latestState.towers || []).find((t) => t.id === selectedTowerId) || null;
+  const selectedPanel = document.getElementById("selected-panel");
+  const selectedLabel = document.getElementById("selected-label");
+  const sellBtn = document.getElementById("sell-button");
+
+  if (!selected) {
+    selectedPanel.classList.add("hidden");
+    selectedLabel.textContent = "No Doro seleccionado";
+    sellBtn.textContent = "Vender";
+    return;
+  }
+
+  selectedPanel.classList.remove("hidden");
+  selectedLabel.textContent = `${TOWER_VISUALS[selected.type]?.label || selected.type} (${selected.gx}, ${selected.gy})`;
+  sellBtn.textContent = `Sell for ${selected.sellValue}c`;
+}
+
 async function startWave() {
   try {
     await fetch("/api/start-wave", { method: "POST" });
@@ -129,12 +247,50 @@ async function startWave() {
   }
 }
 
+async function placeTower(type, gx, gy) {
+  try {
+    const response = await fetch("/api/place-tower", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, gx, gy }),
+    });
+    if (response.ok) {
+      pendingTowerType = null;
+    }
+  } catch (err) {
+    console.error("Failed to place tower", err);
+  }
+}
+
+async function sellSelectedTower() {
+  if (!selectedTowerId) {
+    return;
+  }
+  try {
+    const response = await fetch("/api/sell", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ towerId: selectedTowerId }),
+    });
+    if (response.ok) {
+      selectedTowerId = null;
+    }
+  } catch (err) {
+    console.error("Failed to sell tower", err);
+  }
+}
+
 function connectEvents() {
   const events = new EventSource("/events");
   events.onmessage = (event) => {
     try {
       const state = JSON.parse(event.data);
+      latestState = state;
+      if (!(latestState.towers || []).some((t) => t.id === selectedTowerId)) {
+        selectedTowerId = null;
+      }
       updateHud(state);
+      updateTowerPanel();
       render(state);
     } catch (err) {
       console.error("Invalid SSE payload", err, event.data);
@@ -145,6 +301,58 @@ function connectEvents() {
   };
 }
 
+function connectUi() {
+  document.getElementById("place-dart").addEventListener("click", () => {
+    pendingTowerType = "dart";
+    selectedTowerId = null;
+    updateTowerPanel();
+    render(latestState);
+  });
+
+  document.getElementById("cancel-place").addEventListener("click", () => {
+    pendingTowerType = null;
+    updateTowerPanel();
+    render(latestState);
+  });
+
+  document
+    .getElementById("sell-button")
+    .addEventListener("click", sellSelectedTower);
+
+  canvas.addEventListener("mousemove", (event) => {
+    if (!pendingTowerType) {
+      return;
+    }
+    hoverCell = getCellFromMouse(event);
+    render(latestState);
+  });
+
+  canvas.addEventListener("mouseleave", () => {
+    hoverCell = null;
+    render(latestState);
+  });
+
+  canvas.addEventListener("click", async (event) => {
+    const cell = getCellFromMouse(event);
+    if (!isWithinBounds(cell.gx, cell.gy)) {
+      return;
+    }
+
+    if (pendingTowerType) {
+      await placeTower(pendingTowerType, cell.gx, cell.gy);
+      updateTowerPanel();
+      return;
+    }
+
+    const tower = towerAt(cell.gx, cell.gy);
+    selectedTowerId = tower ? tower.id : null;
+    updateTowerPanel();
+    render(latestState);
+  });
+}
+
 document.getElementById("start-wave").addEventListener("click", startWave);
-render({ enemies: [] });
+connectUi();
+updateTowerPanel();
+render(latestState);
 connectEvents();

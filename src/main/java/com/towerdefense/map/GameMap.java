@@ -10,10 +10,12 @@ public class GameMap {
     public static final int TILE = 48;
 
     private final CellType[][] grid;
+    private final boolean[][] occupied;
     private final List<int[]> waypoints;
 
     private GameMap(CellType[][] grid, List<int[]> waypoints) {
         this.grid = grid;
+        this.occupied = new boolean[COLS][ROWS];
         this.waypoints = Collections.unmodifiableList(waypoints);
     }
 
@@ -54,7 +56,24 @@ public class GameMap {
     }
 
     public boolean canPlace(int col, int row) {
-        return getCell(col, row) == CellType.BUILDABLE;
+        return isWithinBounds(col, row) && getCell(col, row) == CellType.BUILDABLE
+                && !occupied[col][row];
+    }
+
+    public void setOccupied(int col, int row) {
+        if (isWithinBounds(col, row)) {
+            occupied[col][row] = true;
+        }
+    }
+
+    public void clearOccupied(int col, int row) {
+        if (isWithinBounds(col, row)) {
+            occupied[col][row] = false;
+        }
+    }
+
+    public boolean isWithinBounds(int col, int row) {
+        return col >= 0 && col < COLS && row >= 0 && row < ROWS;
     }
 
     public List<int[]> getWaypoints() {

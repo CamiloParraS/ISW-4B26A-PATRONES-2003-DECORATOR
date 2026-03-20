@@ -134,6 +134,63 @@ h1 {
   filter: brightness(1.08);
 }
 
+.panel {
+  border: 1px solid #304155;
+  border-radius: 8px;
+  background: #0d1620;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.tower-btn,
+.ghost-btn,
+.sell-btn {
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tower-btn {
+  border: 1px solid #16a34a;
+  background: #14532d;
+  color: #ecfdf5;
+}
+
+.tower-btn:hover {
+  filter: brightness(1.08);
+}
+
+.ghost-btn {
+  border: 1px solid #475569;
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.ghost-btn:hover {
+  filter: brightness(1.08);
+}
+
+.sell-btn {
+  border: 1px solid #f59e0b;
+  background: #92400e;
+  color: #fffbeb;
+}
+
+.sell-btn:hover {
+  filter: brightness(1.08);
+}
+
 @media (max-width: 1280px) {
   .layout {
     flex-direction: column;

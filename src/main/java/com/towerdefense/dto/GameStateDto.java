@@ -8,11 +8,11 @@ public class GameStateDto {
     private final int coins;
     private final String phase;
     private final List<EnemyDto> enemies;
-    private final List<String> towers;
-    private final List<String> projectiles;
+    private final List<TowerDto> towers;
+    private final List<ProjectileDto> projectiles;
 
     public GameStateDto(int wave, int lives, int coins, String phase, List<EnemyDto> enemies,
-            List<String> towers, List<String> projectiles) {
+            List<TowerDto> towers, List<ProjectileDto> projectiles) {
         this.wave = wave;
         this.lives = lives;
         this.coins = coins;
@@ -44,7 +44,7 @@ public class GameStateDto {
             if (i > 0) {
                 sb.append(',');
             }
-            sb.append('"').append(escape(towers.get(i))).append('"');
+            sb.append(towers.get(i).toJson());
         }
         sb.append("],");
 
@@ -53,7 +53,7 @@ public class GameStateDto {
             if (i > 0) {
                 sb.append(',');
             }
-            sb.append('"').append(escape(projectiles.get(i))).append('"');
+            sb.append(projectiles.get(i).toJson());
         }
         sb.append(']');
 
